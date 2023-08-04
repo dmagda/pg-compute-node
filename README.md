@@ -33,7 +33,7 @@ create or replace function my_java_script_function() returns JSON as $$
 $$ language plv8;
 ```
 
-the developer should be able just to define the a custom function anywhere in the app logic:
+the developer should be able just to define a custom function anywhere in the app logic:
 ```javascript
 async function plv8_get_postgres_version(db_client) {
     var json_result = plv8.execute('SELECT version(), plv8_version()');

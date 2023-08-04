@@ -19,7 +19,7 @@ async function openClientConnection() {
 }
 
 async function plv8_get_postgres_version(db_client) {
-    var json_result = plv8.execute('SELECT now()');
+    var json_result = plv8.execute('SELECT version(), plv8_version()');
     return json_result;
 }
 
