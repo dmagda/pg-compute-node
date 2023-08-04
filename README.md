@@ -11,11 +11,11 @@ While this extension makes it easier for JS developers to create database logic 
     $$ language plv8;
     ```
 
-2. Then this JS function has to be created or replaced every time a developer updates the logic. Any how do you update it? You execute the above statement via a PG driver or tool such as psql.
+2. Then this JS function has to be created or replaced every time a developer updates the logic. And how does the developer update the logic? By executing the above statement via a PG driver or tool such as psql.
 
 3. Then you need to call the created/replaced function to do some real work by sending  `SELECT my_java_script_function()` statement.
 
-4. Then you use the PG driver to properly pass the result set.
+4. Then you use the PG driver to properly process a result set.
 
 5. Then... there is always something else.
 

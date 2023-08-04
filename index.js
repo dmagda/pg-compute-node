@@ -18,6 +18,7 @@ async function openClientConnection() {
     return db_client;
 }
 
+// Database function/stored procedure writted in Java Script
 async function plv8_get_postgres_version(db_client) {
     var json_result = plv8.execute('SELECT version(), plv8_version()');
     return json_result;
@@ -26,6 +27,7 @@ async function plv8_get_postgres_version(db_client) {
 (async () => {
     const db_client = await openClientConnection();
 
+    // This is how you execute the function
     var result = await compute.run(db_client, plv8_get_postgres_version);
 
     console.log(result);
