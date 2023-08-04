@@ -1,0 +1,19 @@
+{
+    "name": "postgres-compute",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/dmagda/node-postgres-compute.git"
+    },
+    "author": "Denis Magda",
+    "license": "Apache-2.0",
+    "bugs": {
+        "url": "https://github.com/dmagda/node-postgres-compute/issues"
+    },
+    "homepage": "https://github.com/dmagda/node-postgres-compute#readme",
+    "dependencies": {
+        "pg": "^8.11.2"
+    }
+}
