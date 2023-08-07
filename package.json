@@ -1,5 +1,5 @@
 {
-    "name": "postgres-compute",
+    "name": "pg_compute_nodejs",
     "version": "1.0.0",
     "description": "",
     "main": "index.js",

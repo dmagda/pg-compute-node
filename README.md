@@ -71,6 +71,11 @@ How to test:
     create extension plv8;
     ```
 
+3. Init the app by loading required packages:
+    ```shell
+    npm i
+    ```
+
 3. Start this app using `node index.js` command and you should see output similar to the following:
     ```javascript
     node index.js
