@@ -35,6 +35,21 @@ module.exports = {
     }
 }
 
+const JS_TO_POSTGRES_TYPE_MAPPING = {
+    "int": "int4",
+    "long": "int8",
+    "bigint": "bigint",
+    "float": "float4",
+    "boolean": "bool",
+    "string": "text",
+    "[object Boolean]": "bool",
+    "[object Date]": "date",
+    "[object String]": "text"
+};
+
+const MIN_INT = Math.pow(-2, 31) // -2147483648
+const MAX_INT = Math.pow(2, 31) - 1 // 2147483647
+
 function parseFunctionArguments(funcStr) {
     const funcArgs = funcStr.substring(funcStr.indexOf("(") + 1, funcStr.indexOf(")")).split(",");
 
@@ -55,24 +70,13 @@ function prepareFunctionWithArgs(funcName, funcBody, argsNames, argsValues) {
     var argsStr = "";
 
     for (i = 0; i < argsValues.length; i++) {
-        var arg = argsValues[i];
+        arg = argsValues[i];
+        pgType = getPostgresType(arg);
 
-        if (i > 0)
-            argsStr += ", ";
-
-        if (typeof (arg) == "number") {
-            //TODO: support other data types
-            if (Number.isInteger(arg)) {
-                argTypes[i] = "int";
-            } else {
-                throw new Error("Unsupported arg type: " + typeof (arg));
-            }
-        } else {
-            throw new Error("Unsupported arg type: " + typeof (arg));
-        }
-
-        argsStr += argsNames[i] + " " + argTypes[i];
+        argsStr += argsNames[i] + " " + pgType + ", ";
     }
+
+    argsStr = argsStr.slice(0, argsStr.length - 2);
 
     return "create or replace function " + funcName + "(" + argsStr + ") returns JSON as $$" +
         funcBody +
@@ -85,9 +89,41 @@ function prepareExecStmt(funcName) {
 
 
 function prepareExecStmtWithArgs(funcName, argsValues) {
-    //TODO: support all data types, presently the function will fail for strings that have to be
-    //enclosed in '' brackets.
-    argsStr = argsValues.join(", ");
+    var argsStr = "";
+
+    argsValues.forEach(arg => {
+        pgType = getPostgresType(arg);
+
+        if (pgType == "text")
+            argsStr += "'" + arg + "',";
+        else
+            argsStr += arg + ",";
+    });
+
+    argsStr = argsStr.slice(0, argsStr.length - 1);
 
     return "select " + funcName + "(" + argsStr + ");"
+}
+
+function getPostgresType(arg) {
+    var type = typeof (arg);
+    var pgType = undefined;
+
+    if (type == "number") {
+        if (Number.isInteger(arg)) {
+            pgType = JS_TO_POSTGRES_TYPE_MAPPING[arg < MIN_INT || arg > MAX_INT ? "long" : "int"];
+        } else {
+            pgType = JS_TO_POSTGRES_TYPE_MAPPING["float"];
+        }
+    } else if (type == "object") {
+        type = Object.prototype.toString.call(arg);
+        pgType = JS_TO_POSTGRES_TYPE_MAPPING[type];
+    } else {
+        pgType = JS_TO_POSTGRES_TYPE_MAPPING[type];
+    }
+
+    if (pgType == undefined)
+        throw new Error("Unsupported argument type: " + type);
+
+    return pgType;
 }

@@ -30,17 +30,22 @@ async function plv8GetCurrentTime(a, b, c) {
     return json_result;
 }
 
+async function plv8PassString(str) {
+    var json_result = plv8.execute("SELECT CONCAT('Hello',' ','" + str + "') as str");
+    return json_result;
+}
+
 (async () => {
     const db_client = await openClientConnection();
 
     // This is how you execute the function
-    // var result = await compute.run(db_client, plv8_get_postgres_version);
-    // console.log(result);
-
     var result = await compute.run(db_client, plv8GetCurrentTime, 2, 3, 2);
     console.log(result);
 
     result = await compute.run(db_client, plv8GetPostgresVersion);
+    console.log(result);
+
+    result = await compute.run(db_client, plv8PassString, "world");
     console.log(result);
 
     await db_client.end();
