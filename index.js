@@ -1,6 +1,8 @@
+"use strict";
+
 const { Pool, Client } = require("pg");
 
-var compute = require("./pg_compute");
+const { PgCompute } = require("./pg_compute");
 
 const db_endpoint = {
     host: "localhost",
@@ -20,32 +22,37 @@ async function openClientConnection() {
 
 // Database function/stored procedure writted in Java Script
 async function plv8GetPostgresVersion() {
-    var json_result = plv8.execute('SELECT version(), plv8_version()');
+    let json_result = plv8.execute('SELECT version(), plv8_version()');
     return json_result;
 }
 
 async function plv8GetCurrentTime(a, b, c) {
-    var d = (a + b) * c;
-    var json_result = plv8.execute('SELECT now(),' + d + ' as sum');
+    let d = (a + b) * c;
+    let json_result = plv8.execute('SELECT now(),' + d + ' as sum');
     return json_result;
 }
 
 async function plv8PassString(str) {
-    var json_result = plv8.execute("SELECT CONCAT('Hello',' ','" + str + "') as str");
+    let json_result = plv8.execute("SELECT CONCAT('Hello',' ','" + str + "') as str");
+
     return json_result;
 }
 
 (async () => {
     const db_client = await openClientConnection();
 
+    const compute = new PgCompute();
+
+    await compute.init(db_client);
+
     // This is how you execute the function
-    var result = await compute.run(db_client, plv8GetCurrentTime, 2, 3, 2);
+    let result = await compute.run(plv8GetCurrentTime, 2, 3, 2);
     console.log(result);
 
-    result = await compute.run(db_client, plv8GetPostgresVersion);
+    result = await compute.run(plv8GetPostgresVersion);
     console.log(result);
 
-    result = await compute.run(db_client, plv8PassString, "world");
+    result = await compute.run(plv8PassString, "world");
     console.log(result);
 
     await db_client.end();
