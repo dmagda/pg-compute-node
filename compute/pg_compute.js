@@ -1,3 +1,5 @@
+const { Deployment, DeploymentMode } = require("./deployment.js");
+
 /**
  * 
  */
@@ -18,23 +20,29 @@ class PgCompute {
     static #MAX_INT = Math.pow(2, 31) - 1 // 2147483647
 
     /** Database schema that stores plv8 functions. */
-    dbSchema;
+    #dbSchema;
 
-    /** Database connection. */
-    dbClient;
+    /** Functions deployment mode. */
+    #deploymentMode;
 
-    constructor(dbSchema = "public") {
-        this.dbSchema = dbSchema;
+    /** Deployment object for the current sesison. */
+    #deployment;
+
+    constructor(dbSchema = "public", deploymentMode = DeploymentMode.AUTO) {
+        this.#dbSchema = dbSchema;
+        this.#deploymentMode = deploymentMode;
     }
 
     async init(dbClient) {
-        this.dbClient = dbClient;
+        this.#deployment = new Deployment(this.#deploymentMode, this.#dbSchema);
+
+        await this.#deployment.init(dbClient);
     }
 
     /**
      * The function executes a plv8 function in the database.
      */
-    async run(plv8Func, ...args) {
+    async run(dbClient, plv8Func, ...args) {
         const funcStr = plv8Func.toString();
 
         const funcName = plv8Func.name;
@@ -49,33 +57,32 @@ class PgCompute {
             throw new Error("Function arguments mismatch. Expected " + funcArgsCnt + ", received " + args.length);
         }
 
-        let funcCreateStmt;
         let funcExecStmt;
 
         if (funcArgsCnt > 0) {
             const argNames = PgCompute.#parseFunctionArguments(funcStr);
-            funcCreateStmt = PgCompute.#prepareFunctionWithArgs(funcName, funcBody, argNames, args);
+
+            await this.#checkFunctionWithArgsExists(dbClient, funcName, funcBody, argNames, args);
             funcExecStmt = PgCompute.#prepareExecStmtWithArgs(funcName, args);
         } else {
-            funcCreateStmt = PgCompute.#prepareFunction(funcName, funcBody);
+            await this.#checkFunctionExists(dbClient, funcName, funcBody);
             funcExecStmt = PgCompute.#prepareExecStmt(funcName);
         }
 
         // console.debug("Generated function create statement:\n" + funcCreateStmt);
         // console.debug("Generated function exec statement:\n" + funcExecStmt);
 
-        let result = await this.dbClient.query(funcCreateStmt + funcExecStmt);
+        // TODO: handle database errors
+        let result = await dbClient.query(funcExecStmt);
 
-        return result[1].rows[0][funcName.toLowerCase()];
+        return result.rows[0][funcName.toLowerCase()];
     }
 
-    static #prepareFunction(funcName, funcBody) {
-        return "create or replace function " + funcName + "() returns JSON as $$" +
-            funcBody +
-            "$$ language plv8;"
+    async #checkFunctionExists(dbClient, funcName, funcBody) {
+        await this.#deployment.checkExists(dbClient, funcName, null, funcBody);
     }
 
-    static #prepareFunctionWithArgs(funcName, funcBody, argsNames, argsValues) {
+    async #checkFunctionWithArgsExists(dbClient, funcName, funcBody, argsNames, argsValues) {
         let argsStr = "";
         let arg, pgType;
 
@@ -86,11 +93,9 @@ class PgCompute {
             argsStr += argsNames[i] + " " + pgType + ", ";
         }
 
-        argsStr = argsStr.slice(0, argsStr.length - 2);
+        argsStr = argsStr.slice(0, argsStr.length - 2).trim();
 
-        return "create or replace function " + funcName + "(" + argsStr + ") returns JSON as $$" +
-            funcBody +
-            "$$ language plv8;"
+        await this.#deployment.checkExists(dbClient, funcName, argsStr, funcBody);
     }
 
     static #prepareExecStmt(funcName) {

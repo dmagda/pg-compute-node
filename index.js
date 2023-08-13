@@ -2,7 +2,7 @@
 
 const { Pool, Client } = require("pg");
 
-const { PgCompute } = require("./pg_compute");
+const { PgCompute } = require("./compute/pg_compute");
 
 const db_endpoint = {
     host: "localhost",
@@ -45,14 +45,16 @@ async function plv8PassString(str) {
 
     await compute.init(db_client);
 
+    let result;
+
     // This is how you execute the function
-    let result = await compute.run(plv8GetCurrentTime, 2, 3, 2);
+    result = await compute.run(db_client, plv8GetCurrentTime, 2, 3, 2);
     console.log(result);
 
-    result = await compute.run(plv8GetPostgresVersion);
+    result = await compute.run(db_client, plv8GetPostgresVersion);
     console.log(result);
 
-    result = await compute.run(plv8PassString, "world");
+    result = await compute.run(db_client, plv8PassString, "world");
     console.log(result);
 
     await db_client.end();
