@@ -43,6 +43,8 @@ class PgCompute {
      * The function executes a plv8 function in the database.
      */
     async run(dbClient, plv8Func, ...args) {
+        // TODO: decide what to do with the `dbClient`. You need it for the listen/notify on the deployment end.
+        // For the scenarios if a function is redeployed in a different session.
         const funcStr = plv8Func.toString();
 
         const funcName = plv8Func.name;
