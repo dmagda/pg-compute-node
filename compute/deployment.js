@@ -1,3 +1,5 @@
+const crypto = require('crypto')
+
 class DeploymentMode {
     /** 
      * Functions are redeployed during each execution.
@@ -23,7 +25,7 @@ class Deployment {
     static #DEPLOYMENT_TABLE_COLUMNS =
         "(name text NOT NULL," +
         "args text," +
-        "body_hashcode int8," +
+        "body_hashcode text," +
         "PRIMARY KEY(name, args));";
 
     /** Deployment mode. */
@@ -61,12 +63,18 @@ class Deployment {
     async checkExists(dbClient, funcName, funcArgs, funcBody) {
         let funcRecord = this.#deploymentTable[funcName];
 
+        if (funcRecord && funcRecord.checked) {
+            console.debug("Skipping function impl check. Function '" + funcName + "' has already been verified during this session.");
+            return;
+        }
+
         if (funcArgs == undefined || funcArgs == null)
             funcArgs = "";
 
+        const bodyHashCode = crypto.createHash('md5').update(funcBody).digest("hex");
+
         if (funcRecord == undefined) {
             if (this.#deploymentMode == DeploymentMode.MANUAL) {
-                //TODO: make a call to the DB because another session might have created the function
                 throw new Error("Function '" + funcName + "' is not deployed.\n" +
                     "The current DeploymentMode is MANUAL. Switch to DeploymentMode.AUTO for automatic redeployment.")
             }
@@ -75,23 +83,25 @@ class Deployment {
 
             console.debug("Function '" + funcName + "' has been deployed");
 
-            return;
-
-        } else if (funcRecord['args'] != funcArgs) {
+        } else if (funcRecord['args'] != funcArgs || funcRecord['bodyHashCode'] != bodyHashCode) {
             if (this.#deploymentMode == DeploymentMode.MANUAL) {
-                //TODO: make a call to the DB because another session might have created the function
-                throw new Error("Function '" + funcName + "' deployed but has different arguments.\n" +
+                throw new Error("Function '" + funcName + "' deployed but has different arguments or implementation.\n" +
                     "The current DeploymentMode is MANUAL. Switch to DeploymentMode.AUTO for automatic redeployment.")
             }
 
             await this.#createFunction(dbClient, funcName, funcArgs, funcBody, true);
 
             console.debug("Function '" + funcName + "' has been redeployed");
-
-            return;
+        } else {
+            console.debug("Function '" + funcName + "' exists");
         }
 
-        console.debug("Function '" + funcName + "' exists");
+        // No need to compare the function logic changes next time as long as
+        // an application instance needs to be restarted to use the new function version at runtime.
+        //
+        // This ticket will adress scenarious when a function is changed by other app instances:
+        // https://github.com/dmagda/pg_compute_nodejs/issues/4
+        this.#deploymentTable[funcName].checked = true;
     }
 
     async #loadDeploymentTable(dbClient) {
@@ -122,7 +132,7 @@ class Deployment {
                 "$$ language plv8;"
         }
 
-        const bodyHashCode = 123243;
+        const bodyHashCode = crypto.createHash('md5').update(funcBody).digest("hex");
 
 
         await dbClient.query("BEGIN;");
