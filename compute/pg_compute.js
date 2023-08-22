@@ -1,5 +1,5 @@
 const { Deployment, DeploymentMode } = require("./deployment.js");
-
+const { Pool, Client } = require("pg");
 /**
  * 
  */
@@ -34,57 +34,79 @@ class PgCompute {
     }
 
     async init(dbClient) {
+        let connection = await this.#getConnection(dbClient);
+
         this.#deployment = new Deployment(this.#deploymentMode, this.#dbSchema);
 
-        await this.#deployment.init(dbClient);
+        try {
+            await this.#deployment.init(connection);
+        } finally {
+            this.#releaseConnection(dbClient, connection);
+        }
     }
 
     /**
      * The function executes a plv8 function in the database.
      */
     async run(dbClient, plv8Func, ...args) {
-        // TODO: decide what to do with the `dbClient`. You need it for the listen/notify on the deployment end.
-        // For the scenarios if a function is redeployed in a different session.
-        const funcStr = plv8Func.toString();
+        let connection = await this.#getConnection(dbClient);
 
-        const funcName = plv8Func.name;
-        const funcArgsCnt = plv8Func.length;
+        try {
+            const funcStr = plv8Func.toString();
 
-        const funcBody = funcStr.substring(
-            funcStr.indexOf("{") + 1,
-            funcStr.lastIndexOf("}")
-        );
+            const funcName = plv8Func.name;
+            const funcArgsCnt = plv8Func.length;
 
-        if ((funcArgsCnt > 0 && args === undefined) || (args !== undefined && args.length != funcArgsCnt)) {
-            throw new Error("Function arguments mismatch. Expected " + funcArgsCnt + ", received " + args.length);
+            const funcBody = funcStr.substring(
+                funcStr.indexOf("{") + 1,
+                funcStr.lastIndexOf("}")
+            );
+
+            if ((funcArgsCnt > 0 && args === undefined) || (args !== undefined && args.length != funcArgsCnt)) {
+                throw new Error("Function arguments mismatch. Expected " + funcArgsCnt + ", received " + args.length);
+            }
+
+            let funcExecStmt;
+
+            if (funcArgsCnt > 0) {
+                const argNames = PgCompute.#parseFunctionArguments(funcStr);
+
+                await this.#checkFunctionWithArgsExists(connection, funcName, funcBody, argNames, args);
+                funcExecStmt = PgCompute.#prepareExecStmtWithArgs(funcName, args);
+            } else {
+                await this.#checkFunctionExists(connection, funcName, funcBody);
+                funcExecStmt = PgCompute.#prepareExecStmt(funcName);
+            }
+
+            let result = await connection.query(funcExecStmt);
+
+            return result.rows[0][funcName.toLowerCase()];
+        } finally {
+            this.#releaseConnection(dbClient, connection);
         }
-
-        let funcExecStmt;
-
-        if (funcArgsCnt > 0) {
-            const argNames = PgCompute.#parseFunctionArguments(funcStr);
-
-            await this.#checkFunctionWithArgsExists(dbClient, funcName, funcBody, argNames, args);
-            funcExecStmt = PgCompute.#prepareExecStmtWithArgs(funcName, args);
-        } else {
-            await this.#checkFunctionExists(dbClient, funcName, funcBody);
-            funcExecStmt = PgCompute.#prepareExecStmt(funcName);
-        }
-
-        // console.debug("Generated function create statement:\n" + funcCreateStmt);
-        // console.debug("Generated function exec statement:\n" + funcExecStmt);
-
-        // TODO: handle database errors
-        let result = await dbClient.query(funcExecStmt);
-
-        return result.rows[0][funcName.toLowerCase()];
     }
 
-    async #checkFunctionExists(dbClient, funcName, funcBody) {
-        await this.#deployment.checkExists(dbClient, funcName, null, funcBody);
+    async #getConnection(dbClient) {
+        let connection;
+
+        if (dbClient instanceof Pool)
+            connection = await dbClient.connect();
+        else
+            connection = dbClient;
+
+        return connection;
     }
 
-    async #checkFunctionWithArgsExists(dbClient, funcName, funcBody, argsNames, argsValues) {
+    #releaseConnection(dbClient, connection) {
+        if (dbClient instanceof Pool && connection != undefined)
+            connection.release();
+    }
+
+    async #checkFunctionExists(connection, funcName, funcBody) {
+        await this.#deployment.checkExists(connection, funcName, null, funcBody);
+    }
+
+    async #checkFunctionWithArgsExists(connection, funcName, funcBody, argsNames, argsValues) {
         let argsStr = "";
         let arg, pgType;
 
@@ -97,7 +119,7 @@ class PgCompute {
 
         argsStr = argsStr.slice(0, argsStr.length - 2).trim();
 
-        await this.#deployment.checkExists(dbClient, funcName, argsStr, funcBody);
+        await this.#deployment.checkExists(connection, funcName, argsStr, funcBody);
     }
 
     static #prepareExecStmt(funcName) {

@@ -48,16 +48,20 @@ class Deployment {
     async init(dbClient) {
         console.debug("Initialized " + this.#deploymentMode + " deployment mode");
 
-        this.#schema = dbClient.escapeIdentifier(this.#schema);
-        this.#deploymentTableFullName = this.#schema + "." + Deployment.#DEPLOYMENT_TABLE_NAME;
+        try {
+            this.#schema = dbClient.escapeIdentifier(this.#schema);
+            this.#deploymentTableFullName = this.#schema + "." + Deployment.#DEPLOYMENT_TABLE_NAME;
 
-        // TODO: handle database errors
-        await dbClient.query("CREATE SCHEMA IF NOT EXISTS " + this.#schema);
+            await dbClient.query("CREATE SCHEMA IF NOT EXISTS " + this.#schema);
 
-        await dbClient.query("CREATE TABLE IF NOT EXISTS " +
-            this.#deploymentTableFullName + Deployment.#DEPLOYMENT_TABLE_COLUMNS);
+            await dbClient.query("CREATE TABLE IF NOT EXISTS " +
+                this.#deploymentTableFullName + Deployment.#DEPLOYMENT_TABLE_COLUMNS);
 
-        await this.#loadDeploymentTable(dbClient);
+            await this.#loadDeploymentTable(dbClient);
+        } catch (error) {
+            error.message = "Failed to initialize pg_compute. Reason:\n" + error.message;
+            throw error;
+        }
     }
 
     async checkExists(dbClient, funcName, funcArgs, funcBody) {

@@ -20,6 +20,12 @@ async function openClientConnection() {
     return db_client;
 }
 
+async function createConnectionPool() {
+    let pool = new Pool(db_endpoint);
+
+    return pool;
+}
+
 // Database function/stored procedure writted in Java Script
 async function plv8GetPostgresVersion() {
     let json_result = plv8.execute('SELECT version(), plv8_version()');
@@ -42,6 +48,7 @@ async function plv8PassString(str) {
 // decide how to handle exceptions and async Promises
 (async () => {
     const db_client = await openClientConnection();
+    // const db_client = await createConnectionPool();
 
     const compute = new PgCompute();
 
@@ -52,7 +59,7 @@ async function plv8PassString(str) {
     console.log("\n");
 
     // This is how you execute the function
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 1; i++) {
         result = await compute.run(db_client, plv8GetCurrentTime, 2, 3, 2);
         console.log(result);
         console.log("\n");
