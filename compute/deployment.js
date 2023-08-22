@@ -45,26 +45,26 @@ class Deployment {
         this.#schema = schema;
     }
 
-    async init(dbClient) {
+    async init(connection) {
         console.debug("Initialized " + this.#deploymentMode + " deployment mode");
 
         try {
-            this.#schema = dbClient.escapeIdentifier(this.#schema);
+            this.#schema = connection.escapeIdentifier(this.#schema);
             this.#deploymentTableFullName = this.#schema + "." + Deployment.#DEPLOYMENT_TABLE_NAME;
 
-            await dbClient.query("CREATE SCHEMA IF NOT EXISTS " + this.#schema);
+            await connection.query("CREATE SCHEMA IF NOT EXISTS " + this.#schema);
 
-            await dbClient.query("CREATE TABLE IF NOT EXISTS " +
+            await connection.query("CREATE TABLE IF NOT EXISTS " +
                 this.#deploymentTableFullName + Deployment.#DEPLOYMENT_TABLE_COLUMNS);
 
-            await this.#loadDeploymentTable(dbClient);
+            await this.#loadDeploymentTable(connection);
         } catch (error) {
             error.message = "Failed to initialize pg_compute. Reason:\n" + error.message;
             throw error;
         }
     }
 
-    async checkExists(dbClient, funcName, funcArgs, funcBody) {
+    async checkExists(connection, funcName, funcArgs, funcBody) {
         let funcRecord = this.#deploymentTable[funcName];
 
         if (funcRecord && funcRecord.checked) {
@@ -83,7 +83,7 @@ class Deployment {
                     "The current DeploymentMode is MANUAL. Switch to DeploymentMode.AUTO for automatic redeployment.")
             }
 
-            await this.#createFunction(dbClient, funcName, funcArgs, funcBody, false);
+            await this.#createFunction(connection, funcName, funcArgs, funcBody, false);
 
             console.debug("Function '" + funcName + "' has been deployed");
 
@@ -93,7 +93,7 @@ class Deployment {
                     "The current DeploymentMode is MANUAL. Switch to DeploymentMode.AUTO for automatic redeployment.")
             }
 
-            await this.#createFunction(dbClient, funcName, funcArgs, funcBody, true);
+            await this.#createFunction(connection, funcName, funcArgs, funcBody, true);
 
             console.debug("Function '" + funcName + "' has been redeployed");
         } else {
@@ -108,8 +108,8 @@ class Deployment {
         this.#deploymentTable[funcName].checked = true;
     }
 
-    async #loadDeploymentTable(dbClient) {
-        const result = await dbClient.query({
+    async #loadDeploymentTable(connection) {
+        const result = await connection.query({
             text: "SELECT * FROM " + this.#deploymentTableFullName,
             name: "get_meta_" + this.#deploymentTableFullName
         });
@@ -123,7 +123,7 @@ class Deployment {
         console.debug("Loaded the meta table:\n %j", this.#deploymentTable);
     }
 
-    async #createFunction(dbClient, funcName, funcArgs, funcBody, redeploy) {
+    async #createFunction(connection, funcName, funcArgs, funcBody, redeploy) {
         let stmt;
 
         if (funcArgs == undefined) {
@@ -139,11 +139,11 @@ class Deployment {
         const bodyHashCode = crypto.createHash('md5').update(funcBody).digest("hex");
 
 
-        await dbClient.query("BEGIN;");
-        await dbClient.query(stmt);
+        await connection.query("BEGIN;");
+        await connection.query(stmt);
 
         if (redeploy) {
-            await dbClient.query(
+            await connection.query(
                 {
                     name: "pg_compute_delete_" + this.#deploymentTableFullName,
                     text: "DELETE FROM " + this.#deploymentTableFullName + " WHERE name = $1 and args = $2;",
@@ -153,7 +153,7 @@ class Deployment {
 
         }
 
-        await dbClient.query(
+        await connection.query(
             {
                 name: "pg_compute_insert_" + this.#deploymentTableFullName,
                 text: "INSERT INTO " + this.#deploymentTableFullName + " VALUES($1,$2,$3);",
@@ -161,8 +161,7 @@ class Deployment {
             }
         );
 
-        await dbClient.query("COMMIT;");
-
+        await connection.query("COMMIT;");
 
         this.#deploymentTable[funcName] = { "args": funcArgs, "bodyHashCode": bodyHashCode };
 
