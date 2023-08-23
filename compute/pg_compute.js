@@ -28,7 +28,7 @@ class PgCompute {
     /** Deployment object for the current sesison. */
     #deployment;
 
-    constructor(dbSchema = "public", deploymentMode = DeploymentMode.AUTO) {
+    constructor(deploymentMode = DeploymentMode.AUTO, dbSchema = "public") {
         this.#dbSchema = dbSchema;
         this.#deploymentMode = deploymentMode;
     }
