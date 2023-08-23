@@ -3,6 +3,7 @@
 const { Pool, Client } = require("pg");
 
 const { PgCompute } = require("./compute/pg_compute");
+const { DeploymentMode } = require("./compute/deployment");
 
 const db_endpoint = {
     host: "localhost",
@@ -50,7 +51,7 @@ async function plv8PassString(str) {
     const db_client = await openClientConnection();
     // const db_client = await createConnectionPool();
 
-    const compute = new PgCompute();
+    let compute = new PgCompute();
 
     await compute.init(db_client);
 
@@ -70,6 +71,15 @@ async function plv8PassString(str) {
     console.log("\n");
 
     result = await compute.run(db_client, plv8PassString, "world");
+    console.log(result);
+    console.log("\n");
+
+    let schema = "tracker";
+
+    compute = new PgCompute(DeploymentMode.AUTO, schema);
+    await compute.init(db_client);
+
+    result = await compute.run(db_client, plv8PassString, "earth");
     console.log(result);
     console.log("\n");
 

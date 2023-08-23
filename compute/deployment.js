@@ -2,12 +2,6 @@ const crypto = require('crypto')
 
 class DeploymentMode {
     /** 
-     * Functions are redeployed during each execution.
-     * Enable this mode, if a shared database instance is used in development.
-     */
-    static DEV = "DEV";
-
-    /** 
      * Functions are automatically redeployed each time 
      * a function implementation is changed. This is the default mode. */
     static AUTO = "AUTO";
@@ -46,9 +40,10 @@ class Deployment {
     }
 
     async init(connection) {
-        console.debug("Initialized " + this.#deploymentMode + " deployment mode");
+        console.debug("Initialized '" + this.#deploymentMode + "' deployment mode for schema '" + this.#schema + "'");
 
         try {
+
             this.#schema = connection.escapeIdentifier(this.#schema);
             this.#deploymentTableFullName = this.#schema + "." + Deployment.#DEPLOYMENT_TABLE_NAME;
 
@@ -65,33 +60,30 @@ class Deployment {
     }
 
     async checkExists(connection, funcName, funcArgs, funcBody) {
+        if (this.#deploymentMode == DeploymentMode.MANUAL) {
+            console.debug("Skipping the function validation for the 'MANUAL' deployment mode");
+            return;
+        }
+
         let funcRecord = this.#deploymentTable[funcName];
+
+        if (funcArgs == undefined || funcArgs == null)
+            funcArgs = "";
 
         if (funcRecord && funcRecord.checked) {
             console.debug("Skipping function impl check. Function '" + funcName + "' has already been verified during this session.");
             return;
         }
 
-        if (funcArgs == undefined || funcArgs == null)
-            funcArgs = "";
-
         const bodyHashCode = crypto.createHash('md5').update(funcBody).digest("hex");
 
         if (funcRecord == undefined) {
-            if (this.#deploymentMode == DeploymentMode.MANUAL) {
-                throw new Error("Function '" + funcName + "' is not deployed.\n" +
-                    "The current DeploymentMode is MANUAL. Switch to DeploymentMode.AUTO for automatic redeployment.")
-            }
-
             await this.#createFunction(connection, funcName, funcArgs, funcBody, false);
 
             console.debug("Function '" + funcName + "' has been deployed");
 
-        } else if (funcRecord['args'] != funcArgs || funcRecord['bodyHashCode'] != bodyHashCode) {
-            if (this.#deploymentMode == DeploymentMode.MANUAL) {
-                throw new Error("Function '" + funcName + "' deployed but has different arguments or implementation.\n" +
-                    "The current DeploymentMode is MANUAL. Switch to DeploymentMode.AUTO for automatic redeployment.")
-            }
+        } else if ((funcRecord['args'] != funcArgs && funcRecord['bodyHashCode'] != bodyHashCode)
+            || funcRecord['bodyHashCode'] != bodyHashCode) {
 
             await this.#createFunction(connection, funcName, funcArgs, funcBody, true);
 
@@ -127,11 +119,11 @@ class Deployment {
         let stmt;
 
         if (funcArgs == undefined) {
-            stmt = "create or replace function " + funcName + "() returns JSON as $$" +
+            stmt = "create or replace function " + this.#schema + "." + funcName + "() returns JSON as $$" +
                 funcBody +
                 "$$ language plv8;"
         } else {
-            stmt = "create or replace function " + funcName + "(" + funcArgs + ") returns JSON as $$" +
+            stmt = "create or replace function " + this.#schema + "." + funcName + "(" + funcArgs + ") returns JSON as $$" +
                 funcBody +
                 "$$ language plv8;"
         }

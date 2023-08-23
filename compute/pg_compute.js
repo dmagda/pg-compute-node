@@ -34,6 +34,9 @@ class PgCompute {
     }
 
     async init(dbClient) {
+        if (dbClient == undefined)
+            throw new Error("Undefined client connection. Make sure to pass a valid client connection");
+
         let connection = await this.#getConnection(dbClient);
 
         this.#deployment = new Deployment(this.#deploymentMode, this.#dbSchema);
@@ -72,10 +75,10 @@ class PgCompute {
                 const argNames = PgCompute.#parseFunctionArguments(funcStr);
 
                 await this.#checkFunctionWithArgsExists(connection, funcName, funcBody, argNames, args);
-                funcExecStmt = PgCompute.#prepareExecStmtWithArgs(funcName, args);
+                funcExecStmt = PgCompute.#prepareExecStmtWithArgs(this.#dbSchema, funcName, args);
             } else {
                 await this.#checkFunctionExists(connection, funcName, funcBody);
-                funcExecStmt = PgCompute.#prepareExecStmt(funcName);
+                funcExecStmt = PgCompute.#prepareExecStmt(this.#dbSchema, funcName);
             }
 
             let result = await connection.query(funcExecStmt);
@@ -122,11 +125,11 @@ class PgCompute {
         await this.#deployment.checkExists(connection, funcName, argsStr, funcBody);
     }
 
-    static #prepareExecStmt(funcName) {
-        return "select " + funcName + "();"
+    static #prepareExecStmt(schema, funcName) {
+        return "select " + schema + "." + funcName + "();"
     }
 
-    static #prepareExecStmtWithArgs(funcName, argsValues) {
+    static #prepareExecStmtWithArgs(schema, funcName, argsValues) {
         let argsStr = "";
         let pgType;
 
@@ -141,7 +144,7 @@ class PgCompute {
 
         argsStr = argsStr.slice(0, argsStr.length - 1);
 
-        return "select " + funcName + "(" + argsStr + ");"
+        return "select " + schema + "." + funcName + "(" + argsStr + ");"
     }
 
     static #parseFunctionArguments(funcStr) {
