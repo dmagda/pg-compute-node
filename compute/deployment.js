@@ -1,5 +1,11 @@
 const crypto = require('crypto')
 
+let DEBUG = false;
+
+if (!DEBUG) {
+    console.debug = function () { }
+}
+
 class DeploymentMode {
     /** 
      * Functions are automatically redeployed each time 
