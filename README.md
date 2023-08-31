@@ -147,4 +147,4 @@ So, if you decide to contribute to the project:
 * Make sure to put new tests under the `test` folder
 * Do a test run after introducing any changes: `npm test`
 
-[![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/denismagda.svg?style=social&label=Questions&amp;Feedback)](https://twitter.com/DenisMagda)
+[![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/denismagda.svg?style=social&label=Questions%26Feedback)](https://twitter.com/DenisMagda)
