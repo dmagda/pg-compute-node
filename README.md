@@ -56,13 +56,25 @@ First, start a PostgreSQL instance with the plv8 extensions. Let's use Docker:
     create extension plv8;
     ```
 
+Next, create a Node.js project:
+
+1. Initialize the project:
+    ```shell
+    npm init
+    ```
+2. Install the `pg` and `pg-compute` modules:
+    ```shell
+    npm install pg
+    npm install pg-compute
+    ```
+
 Next, create the `index.js` file with the following logic:
 
 1. Import node-postgres with PgCompute modules and create a database client configuration:
     ```javascript
     const { Client, ClientConfig } = require("pg");
 
-    const { PgCompute } = require("./compute/pg_compute");
+    const { PgCompute } = require("pg_compute");
 
     const dbEndpoint = {
         host: "localhost",
@@ -137,6 +149,11 @@ To start any example:
     ```shell
     node {example_name.js}
     ```
+
+**Note**, the examples include the PgCompute module from sources. If you'd like to run the examples as part of your own project, then import the module form the npm registry:
+```javascript
+const { PgCompute } = require("pg_compute");
+```
 
 ## Testing
 
