@@ -1,9 +1,25 @@
 /**
- * This sample demonstrates how to use the manual deployment mode with the PgCompute APIs.
+ * Copyright 2023 Denis Magda
  * 
- * @type {DeploymentMode.MANUAL} assumes a database function (stored procedure) has been created manually
- * on the database end and the application logic just needs to call it by providing a function
- * name and arguments list.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * Demonstrates the use of the manual deployment mode with the PgCompute APIs.
+ * 
+ * The @type {DeploymentMode.MANUAL} mode assumes that a database function (stored procedure)
+ * has already been manually created on the database side. With this mode, the application
+ * only needs to invoke the function by providing its name and the required arguments.
  * 
  */
 const { Client, ClientConfig } = require("pg");
