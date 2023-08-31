@@ -1,3 +1,5 @@
+[![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/denismagda.svg?style=social&label=Follow%20%40DenisMagda)](https://twitter.com/DenisMagda)
+
 # PgCompute: a Client-Side PostgreSQL Extension for Database Functions
 
 PgCompute is a client-side PostgreSQL extension that lets you execute JavaScript functions on the database directly from the application logic.
@@ -70,14 +72,14 @@ Next, create the `index.js` file with the following logic:
         password: "password"
     }
     ```
-2. Add a function that needs to be executed on Postgres side:
+2. Add a function that needs to be executed on the Postgres side:
     ```javascript
     function sum(a, b) {
         let c = a + b;
         return c;
     }
     ```
-3. Add the following snippet to instantiate a Client and PgCompute objects and to execute the `sum` function on Postgres:
+3. Add the following snippet to instantiate `Client` and `PgCompute` objects and to execute the `sum` function on Postgres:
     ```javascript
     (async () => {
         // Open a database connection
@@ -122,7 +124,7 @@ Finally, give a try to the auto-redeployment feature:
 Explore the `examples` folder for more code samples:
 
 * `basic_samples.js` - comes with various small samples that show PgCompute capabilities.
-* `savings_interest_sample.js` - calculates the monthly compound interest rate on the database end for all savings accounts. This is one of scenarious when you should prefer using database functions.
+* `savings_interest_sample.js` - calculates the monthly compound interest rate on the database end for all savings accounts. This is one of real-world scenarious when you should prefer using database functions.
 * `manual_deployment_sample.js` - shows how to use the `DeploymentMode.MANUAL` mode. With that mode, the functions are pre-created manually on the database side but still can be invoked seamlessly from the application logic using PgCompute.
 
 To start any example:
