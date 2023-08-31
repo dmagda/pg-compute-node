@@ -1,6 +1,6 @@
 {
     "name": "pg-compute",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "A client-side PostgreSQL extension that lets you execute JavaScript functions on the database side directly from the application logic.",
     "main": "compute/pg_compute.js",
     "repository": {
