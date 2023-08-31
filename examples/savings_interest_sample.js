@@ -18,10 +18,10 @@ const { sprintf } = require('sprintf-js')
 const { PgCompute } = require("../compute/pg_compute");
 
 /**
- * Provide your database connectivity settings here.
+ * @type {ClientConfig} - database connectivity settings.
  * 
- * Make sure your Postgres instance has the plv8 extension that was installed and configured 
- * using the `create extension plv8` command.
+ * Make sure your PostgreSQL instance has the plv8 extension installed and configured 
+ * with the `create extension plv8` command.
  */
 const dbEndpoint = {
     host: "localhost",

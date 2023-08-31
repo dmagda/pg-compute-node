@@ -1,18 +1,18 @@
 {
-    "name": "pg_compute_nodejs",
+    "name": "pg_compute_node",
     "version": "1.0.0",
     "description": "",
     "main": "index.js",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/dmagda/node-postgres-compute.git"
+        "url": "git+https://github.com/dmagda/pg_compute_node"
     },
     "author": "Denis Magda",
     "license": "Apache-2.0",
     "bugs": {
-        "url": "https://github.com/dmagda/node-postgres-compute/issues"
+        "url": "https://github.com/dmagda/pg_compute_node/issues"
     },
-    "homepage": "https://github.com/dmagda/node-postgres-compute#readme",
+    "homepage": "https://github.com/dmagda/pg_compute_node#readme",
     "dependencies": {
         "pg": "^8.11.2"
     },
