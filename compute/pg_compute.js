@@ -242,3 +242,4 @@ class PgCompute {
 }
 
 module.exports.PgCompute = PgCompute;
+module.exports.DeploymentMode = DeploymentMode;

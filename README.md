@@ -152,7 +152,7 @@ To start any example:
 
 **Note**, the examples include the PgCompute module from sources. If you'd like to run the examples as part of your own project, then import the module form the npm registry:
 ```javascript
-const { PgCompute } = require("pg_compute");
+const { PgCompute, DeploymentMode } = require("pg_compute");
 ```
 
 ## Testing

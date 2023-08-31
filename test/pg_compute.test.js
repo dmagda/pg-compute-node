@@ -16,8 +16,7 @@
 
 const { Client, Pool } = require("pg");
 const { PostgreSqlContainer } = require("@testcontainers/postgresql");
-const { PgCompute } = require("../compute/pg_compute");
-const { DeploymentMode } = require("../compute/deployment");
+const { PgCompute, DeploymentMode } = require("../compute/pg_compute");
 
 describe("PgCompute Tests", () => {
     jest.setTimeout(60000);

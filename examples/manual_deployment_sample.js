@@ -24,8 +24,7 @@
  */
 const { Client, ClientConfig } = require("pg");
 const { sprintf } = require('sprintf-js')
-const { PgCompute } = require("../compute/pg_compute");
-const { DeploymentMode } = require("../compute/deployment");
+const { PgCompute, DeploymentMode } = require("../compute/pg_compute");
 
 /**
  * @type {ClientConfig} - database connectivity settings.
