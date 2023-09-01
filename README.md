@@ -43,7 +43,7 @@ First, start a PostgreSQL instance with the plv8 extensions. Let's use Docker:
     ```shell
     mkdir ~/postgresql_data/
 
-    docker run --name postgresql --net custom-network \
+    docker run --name postgresql \
     -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password \
     -p 5432:5432 \
     -v ~/postgresql_data/:/var/lib/postgresql/data -d sibedge/postgres-plv8
